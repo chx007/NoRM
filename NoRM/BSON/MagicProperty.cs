@@ -137,6 +137,7 @@ namespace Norm.BSON
                 }
                 // finally check if the property has the MongoIgnoreIfNull attribute.
                 // and ignore if true.
+                //HACK:待修改,所以空值字段都不保存到数据库中
                 if (this.IgnoreIfNull && value == null)
                 {
                     return true;

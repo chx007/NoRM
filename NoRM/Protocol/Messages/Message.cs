@@ -8,13 +8,15 @@ namespace Norm.Protocol
     public class Message
     {
         protected const int FOUR_MEGABYTES = 4 * 1024 * 1024;
-        
+
+        //HACK:增加Collection与Connection访问字段
         /// <summary>TODO::Description.</summary>
         protected string _collection;
-
+        internal string Collection { get { return _collection; } }
         /// <summary>TODO::Description.</summary>
         protected IConnection _connection;
-
+        internal IConnection Connection { get { return _connection; } }
+        
         /// <summary>TODO::Description.</summary>
         protected int _messageLength;
 

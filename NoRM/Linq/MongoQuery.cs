@@ -118,6 +118,7 @@ namespace Norm.Linq
         /// </summary>
         /// <returns>
         /// </returns>
+        //HACK:TODO 修改LinQ表达式,对没有Select的表达式增加Select(t=>t._id),以支持Cache
         public virtual IEnumerator<T> GetEnumerator()
         {
             return ((IEnumerable<T>)_provider.ExecuteQuery<T>(_expression)).GetEnumerator();

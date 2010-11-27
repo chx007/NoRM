@@ -4,6 +4,8 @@ using System.Linq;
 using Norm.BSON;
 using Norm.Protocol.Messages;
 using System;
+using Norm.Caching;
+using System.Diagnostics;
 
 namespace Norm
 {
@@ -58,7 +60,8 @@ namespace Norm
             set;
         }
 
-
+        //HACK: 为了使replyMessage不为空时，不重复查询，将GetEnumerator()中的replyMessage局部变量，改为成员变量
+        //ReplyMessage<T> replyMessage = null;
         /// <summary>
         /// Returns an enumerator that iterates through the collection.
         /// </summary>
@@ -68,26 +71,97 @@ namespace Norm
         public IEnumerator<O> GetEnumerator()
         {
             ReplyMessage<T> replyMessage;
-
-            if (_hints.AllProperties().Count() == 0) // No hints - just run the query
+            List<T> results = null;
+            Stopwatch stopWatcher;
+            //if (replyMessage == null)
             {
-                replyMessage = Message.Execute();
+                if (_hints.AllProperties().Count() == 0) // No hints - just run the query
+                {
+                    //HACK:增加Cache的支持
+                    //replyMessage = Message.Execute();
+                    if (Message.FieldSelection == null
+                        && Caching.CacheManager.Instance.HasCache(this.CollectionName)
+                        )
+                    {
+                        MagicProperty idProperty = ReflectionHelper.GetHelperForType(typeof(T)).FindIdProperty();
+                        Expando expando = new Expando();
+                        expando[idProperty.Name] = 1;
+                        Message.FieldSelection = expando;
+
+                        stopWatcher = Stopwatch.StartNew();
+                        replyMessage = Message.Execute();
+                        stopWatcher.Stop();
+                        Debug.WriteLine("向数据库查ID:" + stopWatcher.ElapsedMilliseconds);
+                        stopWatcher = Stopwatch.StartNew();
+                        List<object> notInIdList = CacheManager.Instance.GetCacheData<T>(
+                            this.CollectionName,
+                            replyMessage.Results,
+                            out results);
+                        stopWatcher.Stop();
+                        Debug.WriteLine("向缓存ID:" + stopWatcher.ElapsedMilliseconds);
+                        
+                        if (notInIdList != null && notInIdList.Count > 0)
+                        {
+                            Expando query = new Expando();
+                            Expando qin = new Expando();
+                            qin["$in"] = notInIdList;
+                            query[idProperty.Name] = qin;
+                            QueryMessage<T, Expando> qm
+                                = new QueryMessage<T, Expando>(
+                                    Message.Connection,
+                                    Message.Collection)
+                            {
+                                NumberToTake = Message.NumberToTake,
+                                NumberToSkip = Message.NumberToSkip,
+                                Query = query,
+                                OrderBy = Message.OrderBy
+                            };
+                            stopWatcher = Stopwatch.StartNew();
+                            replyMessage = qm.Execute();
+                            stopWatcher.Stop();
+                            Debug.WriteLine("向数据库查数据:" + stopWatcher.ElapsedMilliseconds);
+
+                            stopWatcher = Stopwatch.StartNew();
+                            results.AddRange(replyMessage.Results);
+                            CacheManager.Instance.UpdateCacheData<T>(
+                                this.CollectionName,
+                                replyMessage.Results);
+                            stopWatcher.Stop();
+                            Debug.WriteLine("更新缓存:" + stopWatcher.ElapsedMilliseconds);
+                        }
+                    }
+                    else
+                    {
+                        stopWatcher = Stopwatch.StartNew();
+                        replyMessage = Message.Execute();
+                        Debug.WriteLine("向数据库查数据:" + stopWatcher.ElapsedMilliseconds);
+                    }
+                }
+                else // Add hints.  Other commands can go here as needed.
+                {
+                    var query = Message.Query;
+
+                    var queryWithHint = new Expando();
+                    queryWithHint["$query"] = query;
+                    queryWithHint["$hint"] = _hints;
+                    replyMessage = Message.Execute();
+                    //results = (List<T>)replyMessage.Results;
+                }
             }
-            else // Add hints.  Other commands can go here as needed.
+            if (results != null)
             {
-                var query = Message.Query;
-
-                var queryWithHint = new Expando();
-                queryWithHint["$query"] = query;
-                queryWithHint["$hint"] = _hints;
-                replyMessage = Message.Execute();
+                foreach (var r in results)
+                {
+                    yield return this.Translator(r);
+                }
             }
-
-            foreach (var r in replyMessage.Results)
+            else
             {
-                yield return this.Translator(r);
+                foreach (var r in replyMessage.Results)
+                {
+                    yield return this.Translator(r);
+                }
             }
-
             yield break;
         }
 

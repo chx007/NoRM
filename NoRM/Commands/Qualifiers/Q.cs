@@ -258,6 +258,17 @@ namespace Norm
         }
 
         /// <summary>
+        /// constructs a $elemMatch qualifier statement.
+        /// </summary>
+        /// <typeparam retval="T"></typeparam>
+        /// <param retval="matchDoc"></param>
+        /// <returns></returns>
+        //public static ElementMatch ElementMatch(params object[] matchDoc)
+        //{
+        //    return new ElementMatch(matchDoc);
+        //}
+
+        /// <summary>
         /// returns a constructed regex to be used to match the specified property retval in the DB.
         /// </summary>
         /// <param retval="pattern"></param>
@@ -310,5 +321,33 @@ namespace Norm
 			IWhitinShapeQualifier shapeQualifier = new CircleQualifer(center, radius);
 			return new WithinQualifier(shapeQualifier);
 		}
+        //HACK: 增加DbRef相关查询项
+        /// <summary>
+        /// 创建一个 $ref : "collectionName" 的查询项 
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static RefQualifier Ref(string value)
+        {
+            return new RefQualifier(value);
+        }
+        /// <summary>
+        /// 创建一个 $id : ObjectId("000000000000000000") 的查询项 
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static RefIdQualifier RefId(object value)
+        {
+            return new RefIdQualifier(value);
+        }
+        /// <summary>
+        /// 创建一个 $db : "dbName" 的查询项 
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static RefDbQualifier RefDb(string value)
+        {
+            return new RefDbQualifier(value);
+        }
     }
 }

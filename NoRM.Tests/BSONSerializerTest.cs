@@ -77,7 +77,7 @@ namespace Norm.Tests
         {
         	var n = DateTime.Now;
         	//some rounding issues when ticks are involved.
-			n = n - new TimeSpan (n.Ticks);
+			//n = n - new TimeSpan (n.Ticks);
         	
             var obj1 = new GeneralDTO { ADateTime = null };
             var obj2 = new GeneralDTO { ADateTime = n };
@@ -91,7 +91,7 @@ namespace Norm.Tests
             Assert.AreEqual(null, hydratedObj1.ADateTime);
 
             //Mongo stores dates as long, therefore, we have to use double->long rounding.
-            Assert.AreEqual((long)((obj2.ADateTime.Value.ToUniversalTime() - DateTime.MinValue)).TotalMilliseconds,
+            Assert.AreEqual((long)((obj2.ADateTime.Value - DateTime.MinValue)).TotalMilliseconds,
                 (long)(hydratedObj2.ADateTime.Value - DateTime.MinValue).TotalMilliseconds);
 
         }

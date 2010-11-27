@@ -5,6 +5,7 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using Norm.Configuration;
+using System.Diagnostics;
 
 
 namespace Norm.BSON
@@ -235,10 +236,16 @@ namespace Norm.BSON
             }
             if (type == typeof(DateTime))
             {
-                return BsonHelper.EPOCH.AddMilliseconds(ReadLong(BSONTypes.Int64));
+                //HACK:反序列化时，将UTC时间转为本地时间
+                return BsonHelper.EPOCH.AddMilliseconds(ReadLong(BSONTypes.Int64)).ToLocalTime();
             }
             if (type == typeof(ObjectId))
             {
+                //HACK:增加了对存储为字符串ObjectId的反列化支持
+                if (storedType == BSONTypes.String)
+                {
+                    return new ObjectId(ReadString());
+                }
                 Read(12);
                 return new ObjectId(_reader.ReadBytes(12));
             }
@@ -388,10 +395,24 @@ namespace Norm.BSON
             var itemType = ListHelper.GetListItemType(listType);
             var isObject = typeof(object) == itemType;
             var wrapper = BaseWrapper.Create(listType, itemType, existingContainer);
-
+            ///
+            bool isFirst = true;
             while (!IsDone())
             {
                 var storageType = ReadType();
+                ///
+                //HACK:增加对基本类型数组的支持
+                if (isFirst 
+                    && storageType != BSONTypes.Object 
+                    && itemType == typeof(Expando))
+                {
+                    itemType = _typeMap[storageType];
+                    isObject = typeof(object) == itemType;
+                    listType = typeof(List<>);
+                    listType = listType.MakeGenericType(itemType);
+                    wrapper = BaseWrapper.Create(listType, itemType, existingContainer);
+                }
+                ///
                 ReadName();
                 if (storageType == BSONTypes.Object)
                 {

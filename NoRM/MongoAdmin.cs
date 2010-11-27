@@ -36,7 +36,7 @@ namespace Norm
 		///<param name="sourceDatabase">The source database.</param>
 		///<param name="destinationDatabase">The destination database.</param>
 		///<param name="host">The destination database host.</param>
-		public bool CloneDatabase(string sourceDatabase, string destinationDatabase, string host = "")
+		public bool CloneDatabase(string sourceDatabase, string destinationDatabase, string host)
     	{
 			AssertConnectedToAdmin();
 			return Database.GetCollection<BaseStatusMessage>("$cmd")

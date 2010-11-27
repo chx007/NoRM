@@ -37,7 +37,7 @@ namespace Norm.GridFS
 
     	public GridFile()
         {
-            this.UploadDate = DateTime.Now.ToUniversalTime();
+            this.UploadDate = DateTime.Now;
             this.ChunkSize = (256 * 1024);//the suggested 256kB chunk size.
             this.Id = ObjectId.NewObjectId();
         }

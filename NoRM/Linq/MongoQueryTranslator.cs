@@ -169,6 +169,11 @@ namespace Norm.Linq
                 if (UseScopedQualifier)
                 {
                     _sbWhere.Append("this.");
+                    if (_prefixAlias.Count > 0 )
+                    {
+                        _sbWhere.Append(string.Join(".", _prefixAlias.ToArray()));
+                        _sbWhere.Append(".");
+                    }
                 }
 
                 _sbWhere.Append(alias);
@@ -453,8 +458,9 @@ namespace Norm.Linq
 
                 var property = BSON.ReflectionHelper.FindProperty(typeToQuery, graph[i]);
                 graphParts[i] = MongoConfiguration.GetPropertyAlias(typeToQuery, graph[i]);
-
-                if (property.PropertyType.IsGenericType)
+                //HACK:增加对DbReference的属性查找支持
+                //if (property.PropertyType.IsGenericType)
+                if (property.PropertyType.IsGenericType && !property.PropertyType.Name.StartsWith("DbReference"))
                     typeToQuery = property.PropertyType.GetGenericArguments()[0];
                 else
                     typeToQuery = property.PropertyType.HasElementType ? property.PropertyType.GetElementType() : property.PropertyType;
@@ -462,7 +468,8 @@ namespace Norm.Linq
 
             return graphParts;
         }
-
+        //HACK:增加OR运算标志
+        private bool IsOrOperator = true;
         private void VisitBinaryOperator(BinaryExpression b)
         {
 
@@ -483,7 +490,9 @@ namespace Norm.Linq
                     break;
                 case ExpressionType.OrElse:
                     currentOperator = " || ";
-                    IsComplex = true;
+                    //HACK:设置OR运算标志
+                    IsOrOperator = true;
+                    //IsComplex = true;
                     break;
                 case ExpressionType.Equal:
                     _lastOperator = " == ";
@@ -585,7 +594,19 @@ namespace Norm.Linq
                         VisitPredicate(b.Left);
                         VisitBinaryOperator(b);
                         VisitPredicate(b.Right);
-
+                        //HACK:增加OR运算的支持
+                        if (this.IsOrOperator)
+                        {
+                            List<Expando> expandoList = new List<Expando>(2);
+                            foreach (var key in FlyWeight.AllProperties())
+                            {
+                                Expando expando = new Expando();
+                                expando[key.PropertyName] = key.Value;
+                                expandoList.Add(expando);
+                            }
+                            FlyWeight = Q.Or(expandoList).AsExpando();
+                            this.IsOrOperator = false;
+                        }
                         hasVisited = true;
                     }
                     break;
@@ -1089,10 +1110,13 @@ namespace Norm.Linq
             else
             {
                 //Handle no items in the contains list
-                _sbWhere.Append("(1===2)");
+                _sbWhere.Append("(1==2)");
             }
-
-            SetFlyValue(member, Q.In(collection).AsExpando());
+            //HACK:修改之前的BUG，使之支持对List<DbReference>的Contains操作
+            //SetFlyValue(member, Q.In(collection).AsExpando());
+            _lastFlyProperty = member;
+            SetFlyValue(Q.In(collection).AsExpando());
+            
         }
 
         private void HandleSubCount(MethodCallExpression m)
