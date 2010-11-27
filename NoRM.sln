@@ -1,9 +1,19 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual Studio 2008
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NoRM", "NoRM\NoRM.csproj", "{297A83DB-DACE-4264-B28E-769CF165D4E4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NoRM.Tests", "NoRM.Tests\NoRM.Tests.csproj", "{505E617D-1F40-40AF-BDF0-730EFBC5BA95}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "trial", "trial\trial.csproj", "{98633832-CF77-4C56-A272-9773BDF05293}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Donjon.Model", "Donjon.Model\Donjon.Model\Donjon.Model.csproj", "{7A9A8140-DBB8-4C13-AE35-A8B914FD78F3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTest", "..\..\..\工作代码\Donjon\Donjon\UnitTest\UnitTest.csproj", "{C1C585B4-8C37-4432-B2D3-7C4A4DC6C171}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Newtonsoft.Json", "..\..\JSON.NET\Source\Src\Newtonsoft.Json\Newtonsoft.Json.csproj", "{A9AE40FF-1A21-414A-9FE7-3BE13644CC6D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Newtonsoft.Json.Tests", "..\..\JSON.NET\Source\Src\Newtonsoft.Json.Tests\Newtonsoft.Json.Tests.csproj", "{3E6E2335-B079-4B5B-A65A-9D586914BCBB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,6 +29,29 @@ Global
 		{505E617D-1F40-40AF-BDF0-730EFBC5BA95}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{505E617D-1F40-40AF-BDF0-730EFBC5BA95}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{505E617D-1F40-40AF-BDF0-730EFBC5BA95}.Release|Any CPU.Build.0 = Release|Any CPU
+		{98633832-CF77-4C56-A272-9773BDF05293}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{98633832-CF77-4C56-A272-9773BDF05293}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{98633832-CF77-4C56-A272-9773BDF05293}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{98633832-CF77-4C56-A272-9773BDF05293}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7A9A8140-DBB8-4C13-AE35-A8B914FD78F3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7A9A8140-DBB8-4C13-AE35-A8B914FD78F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7A9A8140-DBB8-4C13-AE35-A8B914FD78F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7A9A8140-DBB8-4C13-AE35-A8B914FD78F3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C1C585B4-8C37-4432-B2D3-7C4A4DC6C171}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C1C585B4-8C37-4432-B2D3-7C4A4DC6C171}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C1C585B4-8C37-4432-B2D3-7C4A4DC6C171}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C1C585B4-8C37-4432-B2D3-7C4A4DC6C171}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A9AE40FF-1A21-414A-9FE7-3BE13644CC6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9AE40FF-1A21-414A-9FE7-3BE13644CC6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9AE40FF-1A21-414A-9FE7-3BE13644CC6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9AE40FF-1A21-414A-9FE7-3BE13644CC6D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3E6E2335-B079-4B5B-A65A-9D586914BCBB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3E6E2335-B079-4B5B-A65A-9D586914BCBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3E6E2335-B079-4B5B-A65A-9D586914BCBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3E6E2335-B079-4B5B-A65A-9D586914BCBB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
 		StartupItem = NoRM.Tests\NoRM.Tests.csproj
@@ -38,8 +71,5 @@ Global
 		$5.LineAlign = 0
 		$4.inheritsSet = Mono
 		version = 0.9.8
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal

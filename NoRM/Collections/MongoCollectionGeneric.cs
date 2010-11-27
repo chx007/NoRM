@@ -12,6 +12,7 @@ using Norm.Protocol.SystemMessages.Requests;
 using Norm.Responses;
 using TypeHelper = Norm.BSON.ReflectionHelper;
 using Norm.Commands.Modifiers;
+using Norm.Caching;
 
 namespace Norm.Collections
 {
@@ -167,9 +168,21 @@ namespace Norm.Collections
             {
                 ops |= UpdateOption.Upsert;
             }
+            if (_connection.StrictMode)
+            {
+                var error = _db.LastError(_connection.VerifyWriteCount ?? 1);
+                if (error.Code > 0)
+                {
+                    throw new MongoException(error.Error);
+                }
+            }
+            //HACK:更新之前,先删除本地缓存
+            RemoveCache<X>(matchDocument);
 
             var um = new UpdateMessage<X, U>(_connection, FullyQualifiedName, ops, matchDocument, valueDocument);
             um.Execute();
+            
+            
         }
 
         /// <summary>
@@ -559,8 +572,29 @@ namespace Norm.Collections
         /// <param retval="template">The template.</param>
         public void Delete<U>(U template)
         {
+            //HACK:增加当数据删除时,先删除缓存中的数据再真正的删除数据库的数据
+            RemoveCache(template);
             var dm = new DeleteMessage<U>(_connection, FullyQualifiedName, template);
             dm.Execute();
+        }
+
+        //HACK:删除本地缓存
+        private void RemoveCache<U>(U template)
+        {
+            if (CacheManager.Instance.HasCache(this._collectionName))
+            {
+                var helper = TypeHelper.GetHelperForType(typeof(T));
+                var idProperty = helper.FindIdProperty();
+                Expando selectField = new Expando();
+                selectField[idProperty.Name] = 1;
+                var qm = new QueryMessage<T, U>(_connection, this.FullyQualifiedName)
+                {
+                    Query = template,
+                    FieldSelection = selectField
+                };
+                MongoQueryExecutor<T, U> queryExecutor = new MongoQueryExecutor<T, U>(qm) { CollectionName = this._collectionName };
+                CacheManager.Instance.RemoveCacheData<T>(this._collectionName, queryExecutor);
+            }
         }
 
         /// <summary>
@@ -619,7 +653,9 @@ namespace Norm.Collections
                 OrderBy = orderBy
             };
             var type = typeof(T);
-            return new MongoQueryExecutor<T, U>(qm);
+
+            //HACK:加上collectionName
+            return new MongoQueryExecutor<T, U>(qm) { CollectionName = this._collectionName };
         }
 
         public T FindAndModify<U, X>(U query, X update)
@@ -650,7 +686,8 @@ namespace Norm.Collections
                     update = update,
                     sort = sort
                 }).Value;
-
+                if( CacheManager.Instance.HasCache( this._collectionName ) )
+                    CacheManager.Instance.UpdateItem<T>(this._collectionName, returnValue);
                 return returnValue;
             }
             catch (MongoException ex)
@@ -790,6 +827,9 @@ namespace Norm.Collections
                     throw new MongoException(error.Error);
                 }
             }
+            //HACK,增加在数据插入数据库,更新缓存的功能
+            if( CacheManager.Instance.HasCache( this._collectionName ) )
+                CacheManager.Instance.UpdateCacheData<T>(this._collectionName, documentsToInsert);
         }
 
 

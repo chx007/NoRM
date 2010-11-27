@@ -48,7 +48,7 @@ namespace Norm.Tests
 			using (var session = new Session ()) {
 				session.Add (new TestProduct { Name = "1", Quantity = 1, LongId = 1 });
 				session.Add (new TestProduct { Name = "2", Quantity = 1, LongId = 2 });
-				session.Add (new TestProduct { Name = "3", Quantity = 0, LongId = 3 });
+				session.Add (new TestProduct { Name = "3", Quantity = 3, LongId = 3 });
 				var queryable = session.Products;
 				
 				var test1 = (from t in queryable
@@ -57,12 +57,12 @@ namespace Norm.Tests
 				Assert.NotNull (test1);
 				
 				var test2 = (from t in queryable
-					where (t.Quantity & 1) == 0
+					where (t.Quantity & 1) == 3
 					select t).FirstOrDefault ();
 				Assert.NotNull (test2);
 				
 				var test3 = (from t in queryable
-					where t.LongId == 3 && ((t.Quantity & 1) == 0)
+					where t.LongId == 3 && ((t.Quantity & 1) == 2)
 					select t).FirstOrDefault ();
 				Assert.NotNull (test3);
 				

@@ -5,6 +5,7 @@ using System.Threading;
 using Norm.BSON;
 using Norm.Protocol.SystemMessages;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Norm.Protocol.Messages
 {
@@ -84,6 +85,7 @@ namespace Norm.Protocol.Messages
         /// <returns></returns>
         public ReplyMessage<T> Execute()
         {
+            Stopwatch stopwatch = Stopwatch.StartNew();
             var payload1 = GetPayload();
             var payload2 = new byte[0];
             if (this.FieldSelection != null)
@@ -116,6 +118,9 @@ namespace Norm.Protocol.Messages
             {
                 throw new TimeoutException("MongoDB did not return a reply in the specified time for this context: " + _connection.QueryTimeout.ToString());
             }
+
+            stopwatch.Stop();
+            Debug.WriteLine("发送返回:" + stopwatch.ElapsedMilliseconds);
             return new ReplyMessage<T>(_connection, this._collection, new BinaryReader(new BufferedStream(stream)), MongoOp.Query, this.NumberToTake);
         }
 

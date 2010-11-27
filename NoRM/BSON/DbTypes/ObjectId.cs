@@ -52,7 +52,7 @@ namespace Norm
         /// Gets the value.
         /// </summary>
         /// <value>The value.</value>
-        public byte[] Value { get; private set; }
+        public byte[] Value { get; protected set; }
 
         /// <summary>
         /// Generates a new unique oid for use with MongoDB Objects.

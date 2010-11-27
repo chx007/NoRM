@@ -128,6 +128,16 @@ namespace Norm.Configuration
             {
                 retval = map[type][propertyName].Alias;             
             }
+            //HACK:解决DbReference类型没有构造前,查找不到别名的问题
+            else if (type.IsGenericType &&
+                   (
+                    type.GetGenericTypeDefinition() == typeof(DbReference<>) ||
+                    type.GetGenericTypeDefinition() == typeof(DbReference<,>)
+                   ))
+            {
+                Activator.CreateInstance(type);
+                retval = map[type][propertyName].Alias;
+            }
             else if (discriminator != null && discriminator != type )
             {
                 //if we are are inheriting

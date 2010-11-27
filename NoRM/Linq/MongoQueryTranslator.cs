@@ -19,7 +19,7 @@ namespace Norm.Linq
 
         private int _takeCount = Int32.MaxValue;
         private string _lastFlyProperty = string.Empty;
-        private string _lastOperator = " === ";
+        private string _lastOperator = " == ";
         private List<string> _prefixAlias = new List<string>();
 
         private StringBuilder _sbWhere;
@@ -169,6 +169,11 @@ namespace Norm.Linq
                 if (UseScopedQualifier)
                 {
                     _sbWhere.Append("this.");
+                    if (_prefixAlias.Count > 0 )
+                    {
+                        _sbWhere.Append(string.Join(".", _prefixAlias.ToArray()));
+                        _sbWhere.Append(".");
+                    }
                 }
 
                 _sbWhere.Append(alias);
@@ -378,7 +383,7 @@ namespace Norm.Linq
             Visit(expr);
             if (IsPredicate(expr))
             {
-                //_sbWhere.Append(" === true");
+                //_sbWhere.Append(" == true");
                 SetFlyValue(!IsNotOperator);
             }
             return expr;
@@ -453,8 +458,9 @@ namespace Norm.Linq
 
                 var property = BSON.ReflectionHelper.FindProperty(typeToQuery, graph[i]);
                 graphParts[i] = MongoConfiguration.GetPropertyAlias(typeToQuery, graph[i]);
-
-                if (property.PropertyType.IsGenericType)
+                //HACK:增加对DbReference的属性查找支持
+                //if (property.PropertyType.IsGenericType)
+                if (property.PropertyType.IsGenericType && !property.PropertyType.Name.StartsWith("DbReference"))
                     typeToQuery = property.PropertyType.GetGenericArguments()[0];
                 else
                     typeToQuery = property.PropertyType.HasElementType ? property.PropertyType.GetElementType() : property.PropertyType;
@@ -462,7 +468,8 @@ namespace Norm.Linq
 
             return graphParts;
         }
-
+        //HACK:增加OR运算标志
+        private bool IsOrOperator = true;
         private void VisitBinaryOperator(BinaryExpression b)
         {
 
@@ -483,14 +490,16 @@ namespace Norm.Linq
                     break;
                 case ExpressionType.OrElse:
                     currentOperator = " || ";
-                    IsComplex = true;
+                    //HACK:设置OR运算标志
+                    IsOrOperator = true;
+                    //IsComplex = true;
                     break;
                 case ExpressionType.Equal:
-                    _lastOperator = " === ";
+                    _lastOperator = " == ";
                     currentOperator = _lastOperator;
                     break;
                 case ExpressionType.NotEqual:
-                    _lastOperator = " !== ";
+                    _lastOperator = " != ";
                     currentOperator = _lastOperator;
                     break;
                 case ExpressionType.LessThan:
@@ -585,7 +594,19 @@ namespace Norm.Linq
                         VisitPredicate(b.Left);
                         VisitBinaryOperator(b);
                         VisitPredicate(b.Right);
-
+                        //HACK:增加OR运算的支持
+                        if (this.IsOrOperator)
+                        {
+                            List<Expando> expandoList = new List<Expando>(2);
+                            foreach (var key in FlyWeight.AllProperties())
+                            {
+                                Expando expando = new Expando();
+                                expando[key.PropertyName] = key.Value;
+                                expandoList.Add(expando);
+                            }
+                            FlyWeight = Q.Or(expandoList).AsExpando();
+                            this.IsOrOperator = false;
+                        }
                         hasVisited = true;
                     }
                     break;
@@ -649,7 +670,7 @@ namespace Norm.Linq
                     case TypeCode.Object:
                         if (c.Value is ObjectId)
                         {
-                            if (_lastOperator == " === " || _lastOperator == " !== ")
+                            if (_lastOperator == " == " || _lastOperator == " != ")
                             {
                                 _sbWhere.Remove(_sbWhere.Length - 2, 1);
                             }
@@ -727,7 +748,7 @@ namespace Norm.Linq
 
                             _sbWhere.Append("(");
                             Visit(m.Object);
-                            _sbWhere.AppendFormat(".indexOf(\"{0}\")===0)", value.EscapeJavaScriptString());
+                            _sbWhere.AppendFormat(".indexOf(\"{0}\")==0)", value.EscapeJavaScriptString());
 
                             SetFlyValue(new Regex("^" + Regex.Escape(value)));
 
@@ -746,7 +767,7 @@ namespace Norm.Linq
                             Visit(m.Object);
                             _sbWhere.AppendFormat(".length - {0}) >= 0 && ", value.Length);
                             Visit(m.Object);
-                            _sbWhere.AppendFormat(".lastIndexOf(\"{0}\") === (", value.EscapeJavaScriptString());
+                            _sbWhere.AppendFormat(".lastIndexOf(\"{0}\") == (", value.EscapeJavaScriptString());
                             Visit(m.Object);
                             _sbWhere.AppendFormat(".length - {0}))", value.Length);
 
@@ -928,7 +949,7 @@ namespace Norm.Linq
 
         private bool CanGetQualifier(string op, object value)
         {
-            if (op == " !== " || op == " === ")
+            if (op == " != " || op == " == ")
                 return true;
 
             if (value != null && (value.GetType().IsAssignableFrom(typeof(double))
@@ -959,9 +980,9 @@ namespace Norm.Linq
         {
             switch (op)
             {
-                case " === ":
+                case " == ":
                     return value;
-                case " !== ":
+                case " != ":
                     return Q.NotEqual(value).AsExpando();
                 case " > ":
                     return Q.GreaterThan(value).AsExpando();
@@ -1079,7 +1100,7 @@ namespace Norm.Linq
                         _sbWhere.Append("this.");
 
                     _sbWhere.Append(member);
-                    _sbWhere.Append(" === ");
+                    _sbWhere.Append(" == ");
                     _sbWhere.Append(GetJavaScriptConstantValue(item));
                     _sbWhere.Append(" || ");
                 }
@@ -1089,10 +1110,13 @@ namespace Norm.Linq
             else
             {
                 //Handle no items in the contains list
-                _sbWhere.Append("(1===2)");
+                _sbWhere.Append("(1==2)");
             }
-
-            SetFlyValue(member, Q.In(collection).AsExpando());
+            //HACK:修改之前的BUG，使之支持对List<DbReference>的Contains操作
+            //SetFlyValue(member, Q.In(collection).AsExpando());
+            _lastFlyProperty = member;
+            SetFlyValue(Q.In(collection).AsExpando());
+            
         }
 
         private void HandleSubCount(MethodCallExpression m)
